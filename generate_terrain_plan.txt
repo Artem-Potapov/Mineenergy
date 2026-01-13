@@ -1,0 +1,7 @@
+Start with 8*8 grid
+Generate random ore clusters in some tiles, let's say 4
+"ban" the generation around the selected tiles
+# - unassigned // empty
+C - coal ore cluster
+D - already around a cluster
+And I'll make them NOT spawn on edges so we really need a 6*6
