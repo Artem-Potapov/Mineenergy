@@ -5,9 +5,10 @@ import sys
 script_directory = os.path.dirname(os.path.realpath(__file__))
 
 pygame.init()
-display = pygame.display.set_mode((800, 600))
+display = pygame.display.set_mode((640, 640))
+#one block is 40px
 
-FPS = 60
+FPS = 15
 running = True
 clock = pygame.time.Clock()
 
@@ -15,20 +16,56 @@ clock = pygame.time.Clock()
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-
         self.image = pygame.image.load(f"player.png").convert()
-
         self.rect = self.image.get_rect()
 
-        display.blit(self.image, (0,0 ))
+    def move_right(self, amount=16):
+        self.rect.x += amount
+
+    def move_left(self, amount=16):
+        self.rect.x -= amount
+
+    def move_down(self, amount=16):
+        self.rect.y += amount
+
+    def move_up(self, amount=16):
+        self.rect.y -= amount
+
+all_sprites = pygame.sprite.Group()
 
 player = Player()
 
+all_sprites.add(player)
+
+keys_active = 0
+
 while running:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-    pygame.display.update()
+        match event.type:
+            case pygame.QUIT:
+                running = False
+            case pygame.KEYDOWN:
+                keys_active += 1
+            case pygame.KEYUP:
+                keys_active -= 1
+    if keys_active:
+        print("scanning")
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            player.move_left(16)
+        if keys[pygame.K_RIGHT]:
+            player.move_right(16)
+        if keys[pygame.K_UP]:
+            player.move_up(16)
+        if keys[pygame.K_DOWN]:
+            player.move_down(16)
+    else:
+        print("not scanning")
+
+    all_sprites.update()
+    display.fill((0, 0, 0))
+    all_sprites.draw(display)
+    pygame.display.flip()
 
     clock.tick(FPS)
 
