@@ -1,8 +1,8 @@
 import random
 
 
-def generate_terrain(terrain_h: int = 8, /, terrain_w: int = 8, n_clusters: int = 4) -> list[list[str]]:
-    terrain = [["#" for j in range(terrain_w)] for i in range(terrain_h)]
+def generate_terrain(terrain_h: int = 16, /, terrain_w: int = 16, n_clusters: int = 10) -> list[list[str]]:
+    terrain = [["-" for j in range(terrain_w)] for i in range(terrain_h)]
 
     clusters = []
 
@@ -13,7 +13,10 @@ def generate_terrain(terrain_h: int = 8, /, terrain_w: int = 8, n_clusters: int 
 
 
 
-    print(*terrain, sep="\n")
+    for i in range(terrain_w):
+        for j in range(terrain_h):
+            print(terrain[i][j], end="")
+        print()
     return terrain
 
 generate_terrain()
