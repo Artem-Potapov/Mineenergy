@@ -1,3 +1,5 @@
+import math
+
 import pygame
 import os
 import sys
@@ -8,7 +10,7 @@ pygame.init()
 display = pygame.display.set_mode((640, 640))
 #one block is 40px
 
-FPS = 15
+FPS = 60
 running = True
 clock = pygame.time.Clock()
 
@@ -16,8 +18,13 @@ clock = pygame.time.Clock()
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load(f"player.png").convert()
+        self.original_image = pygame.image.load(f"player.png").convert_alpha()
+        self.image = self.original_image
         self.rect = self.image.get_rect()
+        self.width = self.rect.width // 2
+        self.height = self.rect.height // 2
+        self.rotation: float = 0
+        self.center = self.rect.center
 
     def move_right(self, amount=16):
         self.rect.x += amount
@@ -30,6 +37,14 @@ class Player(pygame.sprite.Sprite):
 
     def move_up(self, amount=16):
         self.rect.y -= amount
+
+    def rotate(self, amount: float):
+        self.image = pygame.transform.rotate(self.original_image, self.rotation)
+        self.rotation = (self.rotation + amount) % 360  # Value will reapeat after 359. This prevents angle to overflow.
+        x, y = self.rect.center  # Save its current center.
+        self.rect = self.image.get_rect()  # Replace old rect with new rect.
+        self.rect.center = (x, y)  # Put the new rect's center at old center.
+
 
 all_sprites = pygame.sprite.Group()
 
@@ -48,6 +63,8 @@ while running:
                 keys_active += 1
             case pygame.KEYUP:
                 keys_active -= 1
+            case pygame.MOUSEMOTION:
+                pos = pygame.mouse.get_pos()
     if keys_active:
         print("scanning")
         keys = pygame.key.get_pressed()
@@ -59,9 +76,8 @@ while running:
             player.move_up(16)
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             player.move_down(16)
-    else:
-        print("not scanning")
 
+    player.rotate(15)
     all_sprites.update()
     display.fill((0, 0, 0))
     all_sprites.draw(display)
