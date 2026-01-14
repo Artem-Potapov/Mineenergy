@@ -10,10 +10,14 @@ def generate_terrain(terrain_h: int = 16, /, terrain_w: int = 16, n_clusters: in
         j = random.randint(1, terrain_w - 2)
         terrain[i][j] = "C"
 
-    for i in range(terrain_w):
-        for j in range(terrain_h):
-            print(terrain[i][j], end="")
-        print()
+    with open("TERRAIN.txt", "w") as file:
+        for i in range(terrain_w):
+            for j in range(terrain_h):
+                print(terrain[i][j], end="")
+                file.write(terrain[i][j])
+                file.write("  ")
+            file.write("\n")
+            print()
     return terrain
 
 generate_terrain()
