@@ -14,6 +14,15 @@ FPS = 15
 running = True
 clock = pygame.time.Clock()
 
+class Grid():
+    def __init__(self, w, h):
+        self.width = w
+        self.height = h
+        self._grid = [[[] for i in range(w)] for j in range(h)]
+        for i in range(self.height):
+            for j in range(self.width):
+                surf = pygame.surface.Surface((16, 16))        
+                self._grid[i][j] = "N"
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
