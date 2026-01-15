@@ -1,8 +1,12 @@
+import collections
 import math
+from typing import List, overload, Sequence
 
 import pygame
 import os
 import sys
+
+from util import manhattan_distance, manhattan_distance_blocks
 
 script_directory = os.path.dirname(os.path.realpath(__file__))
 
@@ -10,19 +14,60 @@ pygame.init()
 display = pygame.display.set_mode((640, 640))
 #one block is 40px
 
-FPS = 15
+FPS = 60
 running = True
 clock = pygame.time.Clock()
 
-class Grid():
+class GridPixel:
+    def __init__(self, surf: pygame.surface.Surface, rect: pygame.rect.Rect):
+        self.surface: pygame.surface.Surface
+        self.rect: pygame.rect.Rect
+
+class Grid:
     def __init__(self, w, h):
         self.width = w
         self.height = h
-        self._grid = [[[] for i in range(w)] for j in range(h)]
+        self._grid: List[List[pygame.surface.Surface]] = [["" for i in range(w)] for j in range(h)]
         for i in range(self.height):
             for j in range(self.width):
-                surf = pygame.surface.Surface((16, 16))        
-                self._grid[i][j] = "N"
+                surf = pygame.surface.Surface((40, 40)).convert()
+                rect = surf.get_rect()
+                rect.x = j*40
+                rect.y = i*40
+                surf.fill((0, i*j, 255-i*j))
+                print(i, j)
+                self._grid[i][j] = surf
+
+    def update(self):
+        for i in range(self.height):
+            for j in range(self.width):
+                display.blit(self._grid[i][j], (j*40, i*40))
+
+    @overload
+    def light_up(self, x_index: int, y_index: int, /):
+        ...
+    @overload
+    def light_up(self, index: Sequence[int], /):
+        ...
+    def light_up(self, arg1: Sequence[int]|int, arg2:int|None=None, /) -> None:
+        if isinstance(arg1, Sequence):
+            x_index, y_index = arg1[0], arg1[1]
+        else:
+            x_index, y_index = arg1, arg2
+        self._grid[y_index][x_index].fill((255, 255, 255))
+
+    @overload
+    def light_down(self, x_index: int, y_index: int, /):
+        ...
+    @overload
+    def light_down(self, index: Sequence[int], /):
+        ...
+    def light_down(self, arg1: Sequence[int] | int, arg2: int | None = None, /) -> None:
+        if isinstance(arg1, Sequence):
+            x_index, y_index = arg1[0], arg1[1]
+        else:
+            x_index, y_index = arg1, arg2
+        self._grid[y_index][x_index].fill((0, 0, 0))
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -34,21 +79,22 @@ class Player(pygame.sprite.Sprite):
         self.height = self.rect.height // 2
         self.rotation: float = 0
         self.center = self.rect.center
+        self.speed = 4
 
-    def move_right(self, amount=16):
-        self.rect.x += amount
+    def move_right(self):
+        self.rect.x += self.speed
         self.center = self.rect.center
 
-    def move_left(self, amount=16):
-        self.rect.x -= amount
+    def move_left(self):
+        self.rect.x -= self.speed
         self.center = self.rect.center
 
-    def move_down(self, amount=16):
-        self.rect.y += amount
+    def move_down(self):
+        self.rect.y += self.speed
         self.center = self.rect.center
 
-    def move_up(self, amount=16):
-        self.rect.y -= amount
+    def move_up(self):
+        self.rect.y -= self.speed
 
     def abs_rotate(self, amount: float):
         self.rotation = amount
@@ -80,6 +126,8 @@ player = Player()
 all_sprites.add(player)
 
 keys_active = 0
+grid = Grid(16, 16)
+lit_block = [0, 0]
 
 while running:
     for event in pygame.event.get():
@@ -91,26 +139,44 @@ while running:
             case pygame.KEYUP:
                 keys_active -= 1
             case pygame.MOUSEMOTION:
-                pos = pygame.mouse.get_pos()
-                theta = math.atan2(-(pos[1] - player.center[1]), pos[0] - player.center[0])
+                mouse_pos = pygame.mouse.get_pos()
+                theta = math.atan2(-(mouse_pos[1] - player.center[1]), mouse_pos[0] - player.center[0])
                 theta = math.degrees(theta)
                 player.abs_rotate(theta)
+                block_center_pos = [40 * (mouse_pos[0] // 40), 40 * (mouse_pos[1] // 40)]
+                print(f"m_dist: {manhattan_distance(player.center, mouse_pos)}")
+                print(f"m_dist_blocks: {manhattan_distance_blocks(player.center, mouse_pos)}")
+                print(f"dist: {math.dist(player.center, mouse_pos)}")
+                print(f"dist_blocks: {math.dist(player.center, mouse_pos) // 40}")
+                if math.dist(player.center, block_center_pos) // 40 <= 6:
+                    new_lit_block = [mouse_pos[0] // 40, mouse_pos[1] // 40]
+                    if lit_block != new_lit_block:
+                        grid.light_down(lit_block)
+                        lit_block = new_lit_block
+                    grid.light_up(mouse_pos[0] // 40, mouse_pos[1] // 40)
+                else:
+                    grid.light_down(lit_block)
+
+
+
+
     if keys_active:
         #print("scanning")
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            player.move_left(16)
+            player.move_left()
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            player.move_right(16)
+            player.move_right()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
-            player.move_up(16)
+            player.move_up()
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            player.move_down(16)
+            player.move_down()
 
 
 
     all_sprites.update()
     display.fill((0, 0, 0))
+    grid.update()
     all_sprites.draw(display)
     pygame.display.flip()
 
