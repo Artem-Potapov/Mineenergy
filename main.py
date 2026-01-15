@@ -52,6 +52,15 @@ class Player(pygame.sprite.Sprite):
         self.rotation = (self.rotation + amount) % 360  # Value will reapeat after 359. This prevents angle to overflow.
         self.abs_rotate(self.rotation)
 
+class Pickaxe(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.swing_radius = 5
+        # note, radius of the texture is |OB|, where B is the far end of the pickaxe, for a 40*40 player, 20px pickaxe and it sticking out at -13px from the center, radius is 42.0595
+
+    def swing(self):
+        ...
+        math.dist()
 
 
 
