@@ -65,19 +65,6 @@ class OreGridPixel(GridPixel, ABC):
                  ore_type: Literal["COAL", "IRON", "GOLD", "DIAMOND"]):
         super().__init__(surf, rect, True, ore_type)
 
-class OreGridIron(OreGridPixel):
-    def __init__(self, surf: pygame.surface.Surface,
-                 rect: pygame.rect.Rect):
-        super().__init__(surf, rect, "IRON")
-
-    def mine(self) -> int:
-        pass
-
-    def highlight(self) -> None:
-        pass
-
-    def unhighlight(self) -> None:
-        pass
 class OreGridCoal(OreGridPixel):
     def __init__(self, surf: pygame.surface.Surface,
                  rect: pygame.rect.Rect):
