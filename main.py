@@ -65,7 +65,19 @@ class OreGridPixel(GridPixel, ABC):
                  ore_type: Literal["COAL", "IRON", "GOLD", "DIAMOND"]):
         super().__init__(surf, rect, True, ore_type)
 
+class OreGridIron(OreGridPixel):
+    def __init__(self, surf: pygame.surface.Surface,
+                 rect: pygame.rect.Rect):
+        super().__init__(surf, rect, "IRON")
 
+    def mine(self) -> int:
+        pass
+
+    def highlight(self) -> None:
+        pass
+
+    def unhighlight(self) -> None:
+        pass
 class OreGridCoal(OreGridPixel):
     def __init__(self, surf: pygame.surface.Surface,
                  rect: pygame.rect.Rect):
@@ -90,7 +102,11 @@ class Grid:
         _terrain = generate_terrain(w, h, n_clusters=16)
         for i in range(self.height):
             for j in range(self.width):
-                if _terrain[i][j] == "C":
+                if _terrain[i][j] == "I":
+                    _surf = pygame.surface.Surface((40,40)).convert()
+                    _fill = (255,255,255)
+                    pix = OreGridIron(_surf, _surf.get_rect())
+                elif _terrain[i][j] == "C":
                     _surf = pygame.surface.Surface((40, 40)).convert()
                     _fill = (255, 255, 255)
                     pix = OreGridCoal(_surf, _surf.get_rect())
