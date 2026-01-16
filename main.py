@@ -1,6 +1,7 @@
 import collections
 import math
-from typing import List, overload, Sequence
+from abc import ABC, abstractmethod
+from typing import List, overload, Sequence, Literal
 
 import pygame
 import os
@@ -18,10 +19,52 @@ FPS = 60
 running = True
 clock = pygame.time.Clock()
 
-class GridPixel:
-    def __init__(self, surf: pygame.surface.Surface, rect: pygame.rect.Rect):
-        self.surface: pygame.surface.Surface
-        self.rect: pygame.rect.Rect
+
+class GridPixel(ABC):
+    @abstractmethod
+    def mine(self) -> int:  # 0 - block is not broken, 1 - is broken
+        raise NotImplementedError
+
+    @abstractmethod
+    def highlight(self) -> None:
+        raise NotImplementedError
+
+
+class EmptyGridPixel(GridPixel):
+    def __init__(self, surf: pygame.surface.Surface,
+                 rect: pygame.rect.Rect):
+        self.surface: pygame.surface.Surface = surf
+        self.rect: pygame.rect.Rect = rect
+        self.ore = False
+
+    def mine(self) -> int:
+        return 0  #you can't mine emptiness...
+
+    def highlight(self) -> None:
+        raise NotImplementedError
+
+
+class OreGridPixel(GridPixel, ABC):
+    def __init__(self, surf: pygame.surface.Surface,
+                 rect: pygame.rect.Rect,
+                 ore_type: Literal["COAL", "IRON", "GOLD", "DIAMOND"]):
+        self.surface: pygame.surface.Surface = surf
+        self.rect: pygame.rect.Rect = rect
+        self.ore = True
+        self.ore_type = ore_type
+
+
+class OreGridCoal(OreGridPixel):
+    def __init__(self, surf: pygame.surface.Surface,
+                 rect: pygame.rect.Rect):
+        super().__init__(surf, rect, "COAL")
+
+    def mine(self) -> int:
+        pass
+
+    def highlight(self) -> None:
+        pass
+
 
 class Grid:
     def __init__(self, w, h):
@@ -32,24 +75,26 @@ class Grid:
             for j in range(self.width):
                 surf = pygame.surface.Surface((40, 40)).convert()
                 rect = surf.get_rect()
-                rect.x = j*40
-                rect.y = i*40
-                surf.fill((0, i*j, 255-i*j))
+                rect.x = j * 40
+                rect.y = i * 40
+                surf.fill((0, i * j, 255 - i * j))
                 print(i, j)
                 self._grid[i][j] = surf
 
     def update(self):
         for i in range(self.height):
             for j in range(self.width):
-                display.blit(self._grid[i][j], (j*40, i*40))
+                display.blit(self._grid[i][j], (j * 40, i * 40))
 
     @overload
     def light_up(self, x_index: int, y_index: int, /):
         ...
+
     @overload
     def light_up(self, index: Sequence[int], /):
         ...
-    def light_up(self, arg1: Sequence[int]|int, arg2:int|None=None, /) -> None:
+
+    def light_up(self, arg1: Sequence[int] | int, arg2: int | None = None, /) -> None:
         if isinstance(arg1, Sequence):
             x_index, y_index = arg1[0], arg1[1]
         else:
@@ -59,15 +104,18 @@ class Grid:
     @overload
     def light_down(self, x_index: int, y_index: int, /):
         ...
+
     @overload
     def light_down(self, index: Sequence[int], /):
         ...
+
     def light_down(self, arg1: Sequence[int] | int, arg2: int | None = None, /) -> None:
         if isinstance(arg1, Sequence):
             x_index, y_index = arg1[0], arg1[1]
         else:
             x_index, y_index = arg1, arg2
         self._grid[y_index][x_index].fill((0, 0, 0))
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -107,6 +155,7 @@ class Player(pygame.sprite.Sprite):
         self.rotation = (self.rotation + amount) % 360  # Value will reapeat after 359. This prevents angle to overflow.
         self.abs_rotate(self.rotation)
 
+
 class Pickaxe(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -116,7 +165,6 @@ class Pickaxe(pygame.sprite.Sprite):
     def swing(self):
         ...
         math.dist()
-
 
 
 all_sprites = pygame.sprite.Group()
@@ -148,7 +196,8 @@ while running:
                 print(f"m_dist_blocks: {manhattan_distance_blocks(player.center, mouse_pos)}")
                 print(f"dist: {math.dist(player.center, mouse_pos)}")
                 print(f"dist_blocks: {math.dist(player.center, mouse_pos) // 40}")
-                if math.dist(player.center, block_center_pos) // 40 <= 6:
+                if math.dist(player.center, mouse_pos) // 40 <= 2:
+                    #note: there is an issue where because we're doing center math far edges don't count but closer ones do
                     new_lit_block = [mouse_pos[0] // 40, mouse_pos[1] // 40]
                     if lit_block != new_lit_block:
                         grid.light_down(lit_block)
@@ -156,9 +205,6 @@ while running:
                     grid.light_up(mouse_pos[0] // 40, mouse_pos[1] // 40)
                 else:
                     grid.light_down(lit_block)
-
-
-
 
     if keys_active:
         #print("scanning")
@@ -171,8 +217,6 @@ while running:
             player.move_up()
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             player.move_down()
-
-
 
     all_sprites.update()
     display.fill((0, 0, 0))
