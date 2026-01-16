@@ -53,7 +53,7 @@ class EmptyGridPixel(GridPixel):
         return 0  #you can't mine emptiness...
 
     def highlight(self) -> None:
-        raise NotImplementedError
+        self.surface.get_offset()
 
     def unhighlight(self) -> None:
         raise NotImplementedError
@@ -70,6 +70,21 @@ class OreGridCoal(OreGridPixel):
     def __init__(self, surf: pygame.surface.Surface,
                  rect: pygame.rect.Rect):
         super().__init__(surf, rect, "COAL")
+
+    def mine(self) -> int:
+        pass
+
+    def highlight(self) -> None:
+        pass
+
+    def unhighlight(self) -> None:
+        pass
+
+
+class OreGridIron(OreGridPixel):
+    def __init__(self, surf: pygame.surface.Surface,
+                 rect: pygame.rect.Rect):
+        super().__init__(surf, rect, "IRON")
 
     def mine(self) -> int:
         pass
