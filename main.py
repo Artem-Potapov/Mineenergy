@@ -30,6 +30,7 @@ class GridPixel(ABC):
         self.rect: pygame.rect.Rect = rect
         self.ore = False
         self.ore_type = None
+        self.highlighter = pygame.image.load("highlight.png").convert_alpha()
 
     @abstractmethod
     def mine(self) -> int:  # 0 - block is not broken, 1 - is broken
@@ -53,11 +54,15 @@ class EmptyGridPixel(GridPixel):
         return 0  #you can't mine emptiness...
 
     def highlight(self) -> None:
-        self.surface.get_offset()
+        self.surface.subsurface(self.highlighter.get_rect())
+        self.surface.blit(self.highlighter, (self.rect.x, self.rect.y))
+        print("LET THERE BE LIGHT")
 
     def unhighlight(self) -> None:
-        raise NotImplementedError
-
+        #FIX!
+        self.highlighter.set_alpha(0)
+        self.highlighter.fill((0, 0, 0))
+        self.surface.blit(self.highlighter, (self.rect.x, self.rect.y))
 
 class OreGridPixel(GridPixel, ABC):
     def __init__(self, surf: pygame.surface.Surface,
@@ -234,10 +239,10 @@ while running:
                 theta = math.degrees(theta)
                 player.abs_rotate(theta)
                 block_center_pos = [40 * (mouse_pos[0] // 40), 40 * (mouse_pos[1] // 40)]
-                print(f"m_dist: {manhattan_distance(player.center, mouse_pos)}")
-                print(f"m_dist_blocks: {manhattan_distance_blocks(player.center, mouse_pos)}")
-                print(f"dist: {math.dist(player.center, mouse_pos)}")
-                print(f"dist_blocks: {math.dist(player.center, mouse_pos) // 40}")
+                # print(f"m_dist: {manhattan_distance(player.center, mouse_pos)}")
+                # print(f"m_dist_blocks: {manhattan_distance_blocks(player.center, mouse_pos)}")
+                # print(f"dist: {math.dist(player.center, mouse_pos)}")
+                # print(f"dist_blocks: {math.dist(player.center, mouse_pos) // 40}")
                 if math.dist(player.center, mouse_pos) // 40 <= 2:
                     #note: there is an issue where because we're doing center math far edges don't count but closer ones do
                     new_lit_block = [mouse_pos[0] // 40, mouse_pos[1] // 40]
