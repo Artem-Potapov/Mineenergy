@@ -7,6 +7,7 @@ import pygame
 import os
 import sys
 
+from generate_terrain import generate_terrain
 from util import manhattan_distance, manhattan_distance_blocks
 
 script_directory = os.path.dirname(os.path.realpath(__file__))
@@ -21,6 +22,15 @@ clock = pygame.time.Clock()
 
 
 class GridPixel(ABC):
+    def __init__(self, surf: pygame.surface.Surface,
+                 rect: pygame.rect.Rect,
+                 ore: bool,
+                 ore_type: Literal["COAL", "IRON", "GOLD", "DIAMOND"] | None):
+        self.surface: pygame.surface.Surface = surf
+        self.rect: pygame.rect.Rect = rect
+        self.ore = False
+        self.ore_type = None
+
     @abstractmethod
     def mine(self) -> int:  # 0 - block is not broken, 1 - is broken
         raise NotImplementedError
@@ -29,13 +39,15 @@ class GridPixel(ABC):
     def highlight(self) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    def unhighlight(self) -> None:
+        raise NotImplementedError
+
 
 class EmptyGridPixel(GridPixel):
     def __init__(self, surf: pygame.surface.Surface,
                  rect: pygame.rect.Rect):
-        self.surface: pygame.surface.Surface = surf
-        self.rect: pygame.rect.Rect = rect
-        self.ore = False
+        super().__init__(surf, rect, False, None)
 
     def mine(self) -> int:
         return 0  #you can't mine emptiness...
@@ -43,15 +55,15 @@ class EmptyGridPixel(GridPixel):
     def highlight(self) -> None:
         raise NotImplementedError
 
+    def unhighlight(self) -> None:
+        raise NotImplementedError
+
 
 class OreGridPixel(GridPixel, ABC):
     def __init__(self, surf: pygame.surface.Surface,
                  rect: pygame.rect.Rect,
                  ore_type: Literal["COAL", "IRON", "GOLD", "DIAMOND"]):
-        self.surface: pygame.surface.Surface = surf
-        self.rect: pygame.rect.Rect = rect
-        self.ore = True
-        self.ore_type = ore_type
+        super().__init__(surf, rect, True, ore_type)
 
 
 class OreGridCoal(OreGridPixel):
@@ -65,26 +77,38 @@ class OreGridCoal(OreGridPixel):
     def highlight(self) -> None:
         pass
 
+    def unhighlight(self) -> None:
+        pass
+
 
 class Grid:
     def __init__(self, w, h):
         self.width = w
         self.height = h
-        self._grid: List[List[pygame.surface.Surface]] = [["" for i in range(w)] for j in range(h)]
+        # noinspection PyTypeChecker
+        self._grid: List[List[GridPixel]] = [[... for i in range(w)] for j in range(h)]
+        _terrain = generate_terrain(w, h, n_clusters=16)
         for i in range(self.height):
             for j in range(self.width):
-                surf = pygame.surface.Surface((40, 40)).convert()
-                rect = surf.get_rect()
+                if _terrain[i][j] == "C":
+                    _surf = pygame.surface.Surface((40, 40)).convert()
+                    _fill = (255, 255, 255)
+                    pix = OreGridCoal(_surf, _surf.get_rect())
+                else:
+                    _surf = pygame.surface.Surface((40, 40)).convert()
+                    _fill = (0, i * j, 255 - i * j)
+                    pix = EmptyGridPixel(_surf, _surf.get_rect())
+                rect = pix.surface.get_rect()
                 rect.x = j * 40
                 rect.y = i * 40
-                surf.fill((0, i * j, 255 - i * j))
                 print(i, j)
-                self._grid[i][j] = surf
+                pix.surface.fill(_fill)
+                self._grid[i][j] = pix
 
     def update(self):
         for i in range(self.height):
             for j in range(self.width):
-                display.blit(self._grid[i][j], (j * 40, i * 40))
+                display.blit(self._grid[i][j].surface, (j * 40, i * 40))
 
     @overload
     def light_up(self, x_index: int, y_index: int, /):
@@ -99,7 +123,7 @@ class Grid:
             x_index, y_index = arg1[0], arg1[1]
         else:
             x_index, y_index = arg1, arg2
-        self._grid[y_index][x_index].fill((255, 255, 255))
+        self._grid[y_index][x_index].highlight()
 
     @overload
     def light_down(self, x_index: int, y_index: int, /):
@@ -114,7 +138,7 @@ class Grid:
             x_index, y_index = arg1[0], arg1[1]
         else:
             x_index, y_index = arg1, arg2
-        self._grid[y_index][x_index].fill((0, 0, 0))
+        self._grid[y_index][x_index].unhighlight()
 
 
 class Player(pygame.sprite.Sprite):
