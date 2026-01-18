@@ -1,12 +1,10 @@
 import math
-import time
+import random
 from abc import ABC, abstractmethod
-from tkinter.constants import ANCHOR
-from typing import List, overload, Sequence, Literal, Dict, LiteralString
+from typing import List, overload, Sequence, Literal
 
 import pygame
 import os
-import sys
 
 from generate_terrain import generate_terrain
 
@@ -26,7 +24,7 @@ util_sprites = pygame.sprite.GroupSingle()
 class Highlighter(pygame.sprite.DirtySprite):
     def __init__(self):
         pygame.sprite.DirtySprite.__init__(self)
-        self.image = pygame.image.load("highlight.png").convert_alpha()
+        self.image = pygame.image.load("misc/highlight.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.hide()
 
@@ -82,15 +80,12 @@ class EmptyGridPixel(GridPixel):
 
     def highlight(self) -> None:
         self.highlighter.show(125)
-        print(self.rect.center)
-        print(self.rect.x, self.rect.y)
         self.highlighter.move(self.rect.center, center=True)
 
     def unhighlight(self) -> None:
         self.highlighter.hide()
 
     def reset_mining(self) -> None:
-        print("mining reset")
         return
 
 
@@ -103,23 +98,20 @@ class OreGridPixel(GridPixel, ABC):
 
     def highlight(self) -> None:
         self.highlighter.show(255)
-        #print(self.rect.center)
-        #print(self.rect.x, self.rect.y)
         self.highlighter.move(self.rect.center, center=True)
-        #print("LET THERE BE LIGHT!")
 
     def unhighlight(self) -> None:
         self.highlighter.hide()
         self.mined_state = 0
 
     def reset_mining(self) -> None:
-        print("ore mining reset")
         self.mined_state = 0
 
 
 class OreGridCoal(OreGridPixel):
-    def __init__(self, surf: pygame.surface.Surface,
-                 *, highlighter: Highlighter):
+    def __init__(self, *, highlighter: Highlighter):
+        surf = pygame.image.load("misc/coal_ore.png")
+        surf = pygame.transform.rotate(surf, 90*random.randint(1, 4))
         super().__init__(surf=surf, ore_type="COAL", highlighter=highlighter)
 
     def mine(self) -> tuple[Literal["COAL"], int]:
@@ -131,8 +123,9 @@ class OreGridCoal(OreGridPixel):
 
 
 class OreGridIron(OreGridPixel):
-    def __init__(self, surf: pygame.surface.Surface,
-                 *, highlighter: Highlighter):
+    def __init__(self, *, highlighter: Highlighter):
+        surf = pygame.image.load("misc/iron_ore.png")
+        surf = pygame.transform.rotate(surf, 90*random.randint(1, 4))
         super().__init__(surf=surf, ore_type="IRON", highlighter=highlighter)
 
     def mine(self) -> tuple[Literal["IRON"], int]:
@@ -155,21 +148,17 @@ class Grid:
         for i in range(self.height):
             for j in range(self.width):
                 if _terrain[i][j] == "I":
-                    _surf = pygame.surface.Surface((40,40)).convert()
-                    _fill = (255,0,0)
-                    pix = OreGridIron(_surf, highlighter=self.highlighter)
+                    pix = OreGridIron(highlighter=self.highlighter)
                 elif _terrain[i][j] == "C":
-                    _surf = pygame.surface.Surface((40, 40)).convert()
-                    _fill = (0, 255, 0)
-                    pix = OreGridCoal(_surf, highlighter=self.highlighter)
+                    pix = OreGridCoal(highlighter=self.highlighter)
                 else:
                     _surf = pygame.surface.Surface((40, 40)).convert()
                     _fill = (0, i * j, 255 - i * j)
                     pix = EmptyGridPixel(_surf, highlighter=self.highlighter)
+                    pix.surface.fill(_fill)
                 pix.rect.x = j * 40
                 pix.rect.y = i * 40
-                print(i, j)
-                pix.surface.fill(_fill)
+
                 self._grid[i][j] = pix
 
     def update(self):
@@ -230,8 +219,8 @@ class PlayerStats:
 new_sprites = pygame.sprite.Group()
 
 class PlayerStatsDisplay:
-    ANCHOR_X = 480
-    ANCHOR_Y = 560
+    ANCHOR_X = 490
+    ANCHOR_Y = 570
     MARGIN_Y = 30
     TEXT_X = ANCHOR_X + 80
 
@@ -260,7 +249,7 @@ class PlayerStatsDisplay:
 
     def __init__(self, stats: PlayerStats):
         self.player_stats = stats
-        self.font = pygame.font.Font("Rubik-Regular.ttf", 24)
+        self.font = pygame.font.Font("misc/Rubik-Regular.ttf", 24)
         #text display
 
         # COAL: and IRON:
@@ -286,7 +275,7 @@ class PlayerStatsDisplay:
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.original_image = pygame.image.load(f"player.png").convert_alpha()
+        self.original_image = pygame.image.load(f"misc/player.png").convert_alpha()
         self.image = self.original_image
         self.rect = self.image.get_rect()
         self.width = self.rect.width // 2
@@ -297,20 +286,24 @@ class Player(pygame.sprite.Sprite):
         self.stats = PlayerStats()
 
     def move_right(self):
-        self.rect.x += self.speed
-        self.center = self.rect.center
+        if self.center[0] + self.speed <= display.get_width() - self.width:
+            self.rect.x += self.speed
+            self.center = self.rect.center
 
     def move_left(self):
-        self.rect.x -= self.speed
-        self.center = self.rect.center
+        if self.center[0] - self.speed >= 0 + self.width:
+            self.rect.x -= self.speed
+            self.center = self.rect.center
 
     def move_down(self):
-        self.rect.y += self.speed
-        self.center = self.rect.center
+        if self.center[1] + self.speed <= display.get_height() - self.height:
+            self.rect.y += self.speed
+            self.center = self.rect.center
 
     def move_up(self):
-        self.rect.y -= self.speed
-        self.center = self.rect.center
+        if self.center[1] - self.speed >= 0 + self.height:
+            self.rect.y -= self.speed
+            self.center = self.rect.center
 
     def abs_rotate(self, amount: float):
         self.rotation = amount
@@ -362,10 +355,7 @@ while running:
                 theta = math.degrees(theta)
                 player.abs_rotate(theta)
                 block_center_pos = [40 * (mouse_pos[0] // 40), 40 * (mouse_pos[1] // 40)]
-                # print(f"m_dist: {manhattan_distance(player.center, mouse_pos)}")
-                # print(f"m_dist_blocks: {manhattan_distance_blocks(player.center, mouse_pos)}")
-                # print(f"dist: {math.dist(player.center, mouse_pos)}")
-                # print(f"dist_blocks: {math.dist(player.center, mouse_pos) // 40}")
+
                 if math.dist(player.center, mouse_pos) // 40 <= 2:
                     block_highlighted = True
                     #note: there is an issue where because we're doing center math far edges don't count but closer ones do
@@ -390,12 +380,9 @@ while running:
         tmp = grid.mine(mouse_pos[0] // 40, mouse_pos[1] // 40)
         if tmp:
             player.stats.add_ore(*tmp)
-            print(f"C: {player.stats.coal}, I: {player.stats.iron}")
-
         # mine block
 
     if keys_active:
-        #print("scanning")
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             player.move_left()
