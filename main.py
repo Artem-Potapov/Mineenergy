@@ -1,5 +1,7 @@
 import math
+import time
 from abc import ABC, abstractmethod
+from tkinter.constants import ANCHOR
 from typing import List, overload, Sequence, Literal, Dict, LiteralString
 
 import pygame
@@ -225,6 +227,61 @@ class PlayerStats:
         elif ore.lower() == "iron":
             self.iron += amount
 
+new_sprites = pygame.sprite.Group()
+
+class PlayerStatsDisplay:
+    ANCHOR_X = 480
+    ANCHOR_Y = 560
+    MARGIN_Y = 30
+    TEXT_X = ANCHOR_X + 80
+
+    class OreDisplay(pygame.sprite.Sprite, ABC):
+        def __init__(self, font: pygame.font.Font, pos):
+            pygame.sprite.Sprite.__init__(self)
+            self.font = font
+            self.color = (255, 255, 255)
+            self.image = self.font.render("0", True, self.color)
+            self.rect = self.image.get_rect(
+                x = PlayerStatsDisplay.TEXT_X,
+                y = PlayerStatsDisplay.ANCHOR_Y + PlayerStatsDisplay.MARGIN_Y * pos
+            )
+
+        def refresh(self, value: int):
+            self.image = self.font.render(str(value), True, self.color)
+
+    class CoalDisplay(OreDisplay):
+        def __init__(self, font: pygame.font.Font, pos: int = 0):
+            super().__init__(font, pos)
+
+    class IronDisplay(OreDisplay):
+        def __init__(self, font: pygame.font.Font, pos: int = 1):
+            super().__init__(font, pos)
+
+
+    def __init__(self, stats: PlayerStats):
+        self.player_stats = stats
+        self.font = pygame.font.Font("Rubik-Regular.ttf", 24)
+        #text display
+
+        # COAL: and IRON:
+        self.text_coal = self.font.render("COAL:", True, (255, 255, 255))
+        self.text_iron = self.font.render("IRON:", True, (255, 255, 255))
+        self.rect_coal = self.text_coal.get_rect(x=self.ANCHOR_X, y=self.ANCHOR_Y)
+        self.rect_iron = self.text_iron.get_rect(x=self.ANCHOR_X, y=self.ANCHOR_Y + self.MARGIN_Y * 1)
+
+        # var displays
+        self.coal_text = self.CoalDisplay(self.font)
+        self.iron_text = self.IronDisplay(self.font)
+        new_sprites.add(self.coal_text, self.iron_text)
+
+
+    def update(self):
+        self.coal_text.refresh(self.player_stats.coal)
+        self.iron_text.refresh(self.player_stats.iron)
+        display.blit(self.text_coal, self.rect_coal)
+        display.blit(self.text_iron, self.rect_iron)
+
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -288,6 +345,8 @@ all_sprites.add(player)
 mouse_hold = False
 block_highlighted = False
 
+pldis = PlayerStatsDisplay(stats=player.stats)
+
 while running:
     for event in pygame.event.get():
         match event.type:
@@ -347,14 +406,17 @@ while running:
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             player.move_down()
 
-    #GRID UPDATES FIRST!
+    # #GRID UPDATES FIRST!
     grid.update()
-    #Then sprites...
+    # #Then sprites...
     all_sprites.update()
     util_sprites.update()
     #Draw the sprites
     util_sprites.draw(display)
     all_sprites.draw(display)
+    new_sprites.update()
+    new_sprites.draw(display)
+    pldis.update()
     pygame.display.flip()
 
     clock.tick(FPS)
