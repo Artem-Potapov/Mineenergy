@@ -1,16 +1,17 @@
 import random
 
 
-def generate_terrain(terrain_h: int = 16, /, terrain_w: int = 16, n_clusters: int = 10) -> list[list[str]]:
+def generate_terrain(terrain_h: int = 16, /, terrain_w: int = 16,
+                     coal_clusters: int = 10, iron_clusters: int = 10) -> list[list[str]]:
     terrain = [["-" for j in range(terrain_w)] for i in range(terrain_h)]
     clusters = []
 
-    for step in range(n_clusters):
+    for step in range(coal_clusters):
         i = random.randint(1, terrain_h - 2 )
         j = random.randint(1, terrain_w - 2)
         terrain[i][j] = "C"
     
-    for step in range(n_clusters):
+    for step in range(iron_clusters):
         o = random.randint(1, terrain_h - 2)
         k = random.randint(1, terrain_w - 2)
         terrain[o][k] = "I"

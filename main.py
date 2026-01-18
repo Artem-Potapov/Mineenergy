@@ -1,7 +1,5 @@
-import collections
 import math
 from abc import ABC, abstractmethod
-from idlelib.macosx import hideTkConsole
 from typing import List, overload, Sequence, Literal, Dict, LiteralString
 
 import pygame
@@ -9,7 +7,6 @@ import os
 import sys
 
 from generate_terrain import generate_terrain
-from util import manhattan_distance, manhattan_distance_blocks
 
 script_directory = os.path.dirname(os.path.realpath(__file__))
 
@@ -152,7 +149,7 @@ class Grid:
         self.highlighter = highlighter
         # noinspection PyTypeChecker
         self._grid: List[List[GridPixel]] = [[... for i in range(w)] for j in range(h)]
-        _terrain = generate_terrain(w, h, n_clusters=16)
+        _terrain = generate_terrain(w, h, coal_clusters=10, iron_clusters=5)
         for i in range(self.height):
             for j in range(self.width):
                 if _terrain[i][j] == "I":
